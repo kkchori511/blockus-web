@@ -1,5 +1,6 @@
 // 20×20 보드: 매트한 플라스틱 판, 연속된 얕은 격자 홈, 시작 모서리 표시, 놓인 조각, 배치 미리보기.
 
+import type React from 'react'
 import { BOARD_SIZE, COLORS, START_CORNERS, type Color, type GameState, type Shape } from '../engine'
 import { piecePath } from './outline'
 import { PALETTE } from './palette'
@@ -11,13 +12,15 @@ export interface BoardPreview {
   valid: boolean
 }
 
-const RIM = 0.45
+export const RIM = 0.45
 const N = BOARD_SIZE
+/** viewBox 한 변의 길이(칸 단위) */
+export const BOARD_UNITS = N + RIM * 2
 
-export function Board({ state, preview }: { state: GameState; preview?: BoardPreview | null }) {
+export function Board({ state, preview, ref }: { state: GameState; preview?: BoardPreview | null; ref?: React.Ref<SVGSVGElement> }) {
   const placements = state.log.filter((e) => e.type === 'place')
   return (
-    <svg className="board" viewBox={`${-RIM} ${-RIM} ${N + RIM * 2} ${N + RIM * 2}`} role="img" aria-label="블로커스 보드">
+    <svg ref={ref} className="board" viewBox={`${-RIM} ${-RIM} ${N + RIM * 2} ${N + RIM * 2}`} role="img" aria-label="블로커스 보드">
       <defs>
         <linearGradient id="board-plate" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#fbfbfa" />
