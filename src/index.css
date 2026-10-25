@@ -338,21 +338,35 @@ button:disabled {
 /* ---------- 배치 확정 ---------- */
 
 .pending-actions {
+  --dx: -50%;
   position: absolute;
   display: flex;
   gap: 8px;
-  transform: translate(-50%, 8px);
+  /* 보드 가장자리 근처에서도 줄어들거나 줄바꿈되지 않게 */
+  width: max-content;
+  transform: translate(var(--dx), 8px);
   z-index: 5;
 }
 
+.pending-actions.align-start {
+  --dx: 0%;
+}
+
+.pending-actions.align-end {
+  --dx: -100%;
+}
+
 .pending-actions.above {
-  transform: translate(-50%, calc(-100% - 8px));
+  transform: translate(var(--dx), calc(-100% - 8px));
 }
 
 .confirm-btn {
   border: 0;
+  flex: none;
   min-height: 48px;
+  min-width: 96px;
   padding: 0 22px;
+  white-space: nowrap;
   border-radius: 14px;
   background: #1d63e0;
   color: #fff;
@@ -368,6 +382,7 @@ button:disabled {
 
 .cancel-btn {
   border: 0;
+  flex: none;
   width: 48px;
   height: 48px;
   border-radius: 14px;

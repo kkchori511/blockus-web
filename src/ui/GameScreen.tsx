@@ -166,12 +166,17 @@ function PendingActions({ game }: { game: GameController }) {
   const cells = game.pendingCells!
   const xs = cells.map(([x]) => x)
   const ys = cells.map(([, y]) => y)
-  const centerX = (Math.min(...xs) + Math.max(...xs) + 1) / 2
+  const minX = Math.min(...xs)
+  const maxX = Math.max(...xs) + 1
+  const centerX = (minX + maxX) / 2
   const below = Math.max(...ys) < BOARD_SIZE - 3
   const y = below ? Math.max(...ys) + 1 : Math.min(...ys)
+  // 보드 좌우 가장자리 근처에서는 버튼이 보드 밖으로 나가지 않게 조각의 왼쪽·오른쪽 끝에 맞춘다
+  const align = centerX < 4 ? 'start' : centerX > BOARD_SIZE - 4 ? 'end' : 'center'
+  const x = align === 'start' ? minX : align === 'end' ? maxX : centerX
   const pct = (v: number) => `${((v + RIM) / BOARD_UNITS) * 100}%`
   return (
-    <div className={`pending-actions ${below ? 'below' : 'above'}`} style={{ left: pct(centerX), top: pct(y) }}>
+    <div className={`pending-actions ${below ? 'below' : 'above'} align-${align}`} style={{ left: pct(x), top: pct(y) }}>
       <button className="cancel-btn" onClick={game.cancel} aria-label="취소">
         <CloseIcon />
       </button>

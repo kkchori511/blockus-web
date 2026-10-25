@@ -1,4 +1,4 @@
-// 내 차례의 조각 선택 캐러셀: 가운데 조각이 크게, 좌우 조각은 원근감 있게 물러나 일부만 보인다.
+// 내 차례의 조각 선택 캐러셀: 가운데 조각이 크게, 좌우 조각은 원형 다이얼처럼 아래로 내려가며 기울어져 일부만 보인다.
 // 가운데 조각을 끌면 보드로 드래그, 배경이나 옆 조각을 좌우로 밀면 넘김, 옆 조각을 누르면 그 조각으로 이동.
 
 import { useRef } from 'react'
@@ -63,7 +63,8 @@ export function Carousel({ choices, index, color, centerShape, cellSize, onStep,
             key={id}
             className={`carousel-item${center ? ' center' : ''}`}
             style={{
-              transform: `translateX(calc(${o} * 40cqw)) scale(${center ? 1 : 0.5}) rotateY(${-o * 28}deg)`,
+              // 원 둘레를 따라 돈다: 옆으로 갈수록 아래로 내려가고 바깥쪽으로 기운다
+              transform: `translate(calc(${o} * 40cqw), calc(${Math.abs(o) * Math.abs(o)} * 22cqw)) rotate(${o * 18}deg) scale(${center ? 1 : 0.5})`,
               opacity: Math.abs(o) >= 2 ? 0 : center ? 1 : 0.5,
               zIndex: 10 - Math.abs(o),
             }}
