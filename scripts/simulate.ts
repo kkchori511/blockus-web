@@ -1,7 +1,7 @@
-// '오늘의 세트' 블럭 개수와 칸 수 목표를 정하기 위한 시뮬레이션.
+// 모드별 밀도(놓은 칸, 판 채움) 비교 시뮬레이션.
 // 사용: npm run simulate -- [판 수]
 
-import { cellCount, createRng, PIECE_IDS, TOTAL_CELLS, type GameConfig, type PlayerCount } from '../src/engine'
+import { cellCount, createRng, type GameConfig, type PlayerCount } from '../src/engine'
 import { playOut, type Policy } from '../src/engine/sim'
 
 const GAMES = Number(process.argv[2] ?? 300)
@@ -60,15 +60,11 @@ for (const policy of ['bigFirst', 'random'] as const) {
   console.log(`${policy} | ${f1(s.placedCells)} | ${f1(s.placedPieces)} | ${pct(s.allPlacedRate)} | ${f1(s.turns)}`)
 }
 
-// 21개 중 k개를 무작위로 뽑을 때 평균 칸 수(기댓값)와, 그 주변 ±2칸을 목표 범위로 한 세트
-console.log('\n## 오늘의 세트 (4인, bigFirst, 목표 칸 수 = 평균 ±2)')
-console.log('개수 | 목표 칸 | 놓은 칸 | 놓은 조각 | 전부 놓은 비율 | 판당 배치 수')
-const avgSize = TOTAL_CELLS / PIECE_IDS.length
-for (let size = 8; size <= 20; size += 2) {
-  const mid = Math.round(size * avgSize)
-  const spec = { size, minCells: mid - 2, maxCells: mid + 2 }
-  const s = run(4, 'bigFirst', { mode: 'dailySet', dailySet: spec })
-  console.log(`${size} | ${spec.minCells}~${spec.maxCells} | ${f1(s.placedCells)} | ${f1(s.placedPieces)} | ${pct(s.allPlacedRate)} | ${f1(s.turns)}`)
+console.log('\n## 블럭 확장판 (6칸 4개 + 클래식 16개 = 20개 / 89칸)')
+console.log('정책 | 놓은 칸 | 놓은 조각 | 전부 놓은 비율 | 판당 배치 수')
+for (const policy of ['bigFirst', 'random'] as const) {
+  const s = run(4, policy, { mode: 'expansion' })
+  console.log(`${policy} | ${f1(s.placedCells)} | ${f1(s.placedPieces)} | ${pct(s.allPlacedRate)} | ${f1(s.turns)}`)
 }
 
 console.log('\n## 올랜덤 (4인, 참고)')

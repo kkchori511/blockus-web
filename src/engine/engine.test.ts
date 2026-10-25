@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   BOARD_SIZE,
+  ALL_PIECE_IDS,
   EMPTY,
+  HEX_PIECE_IDS,
   PIECES,
   PIECE_IDS,
   TOTAL_CELLS,
@@ -12,7 +14,7 @@ import {
   createRng,
   currentPlayer,
   finalColorScore,
-  generateDailySet,
+  generateExpansionSet,
   isValidPlacement,
   passTurn,
   place,
@@ -51,6 +53,12 @@ describe('조각', () => {
     expect(PIECE_IDS.reduce((sum, id) => sum + PIECES[id].orientations.length, 0)).toBe(91)
     expect(PIECES.X5.orientations).toHaveLength(1)
     expect(PIECES.F5.orientations).toHaveLength(8)
+  })
+
+  it('확장판 6칸 조각 4개는 서로, 그리고 기존 조각과 모양이 겹치지 않는다', () => {
+    expect(HEX_PIECE_IDS.every((id) => PIECES[id].size === 6)).toBe(true)
+    const keys = ALL_PIECE_IDS.flatMap((id) => PIECES[id].orientations.map((o) => o.map(([x, y]) => `${x},${y}`).join(';')))
+    expect(new Set(keys).size).toBe(keys.length)
   })
 })
 
@@ -142,7 +150,7 @@ describe('턴 진행', () => {
 
   it('전체 게임이 끝까지 진행된다(2·3·4인, 세 모드)', () => {
     for (const playerCount of [2, 3, 4] as const) {
-      for (const mode of ['classic', 'allRandom', 'dailySet'] as const) {
+      for (const mode of ['classic', 'allRandom', 'expansion'] as const) {
         const { state } = playOut(config({ playerCount, mode, seed: playerCount * 10 }), 'bigFirst', createRng(playerCount))
         expect(state.over).toBe(true)
         expect(state.out.every(Boolean)).toBe(true)
@@ -207,16 +215,18 @@ describe('올랜덤', () => {
   })
 })
 
-describe('오늘의 세트', () => {
-  it('지정한 개수와 칸 수 범위로 뽑고, 모든 색이 같은 세트를 받는다', () => {
-    const spec = { size: 12, minCells: 48, maxCells: 52 }
+describe('블럭 확장판', () => {
+  it('6칸 4개를 반드시 넣고 1~3칸은 남기며, 20개·89칸으로 맞추고 모든 색이 같은 세트를 받는다', () => {
     for (let seed = 0; seed < 50; seed++) {
-      const set = generateDailySet(createRng(seed), spec)
-      expect(new Set(set).size).toBe(12)
-      expect(cellCount(set)).toBeGreaterThanOrEqual(48)
-      expect(cellCount(set)).toBeLessThanOrEqual(52)
+      const set = generateExpansionSet(createRng(seed))
+      expect(new Set(set).size).toBe(20)
+      expect(cellCount(set)).toBe(TOTAL_CELLS)
+      expect(HEX_PIECE_IDS.every((id) => set.includes(id))).toBe(true)
+      expect(['I1', 'I2', 'I3', 'V3'].every((id) => set.includes(id as PieceId))).toBe(true)
+      expect(set.filter((id) => PIECES[id].size === 5)).toHaveLength(8)
+      expect(set.filter((id) => PIECES[id].size === 4)).toHaveLength(4)
     }
-    const state = createGame(config({ mode: 'dailySet', dailySet: spec }))
+    const state = createGame(config({ mode: 'expansion' }))
     expect(state.remaining.every((r) => r.join() === state.pieceSet.join())).toBe(true)
   })
 })

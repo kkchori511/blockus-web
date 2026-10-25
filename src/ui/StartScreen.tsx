@@ -31,7 +31,10 @@ const DEFAULTS: Settings = {
 function loadSettings(): Settings {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')
-    return saved ? { ...DEFAULTS, ...saved } : DEFAULTS
+    if (!saved) return DEFAULTS
+    const merged: Settings = { ...DEFAULTS, ...saved }
+    // 이름이 바뀌어 없어진 모드(예전 '오늘의 세트')는 클래식으로 돌린다
+    return MODES.some((m) => m.id === merged.mode) ? merged : { ...merged, mode: 'classic' }
   } catch {
     return DEFAULTS
   }
@@ -48,8 +51,14 @@ function saveSettings(s: Settings) {
 const MODES: { id: GameMode; title: string; desc: string; pieces: PieceId[] }[] = [
   { id: 'classic', title: '클래식', desc: '21개 조각을 모두 쓰는 기본 규칙', pieces: ['F5', 'L4', 'I3'] },
   { id: 'allRandom', title: '올랜덤', desc: '매 턴 낼 조각이 무작위로 정해져요. 못 놓으면 패스!', pieces: ['X5', 'T4', 'V3'] },
-  { id: 'dailySet', title: '오늘의 세트', desc: '모두 같은 무작위 16개 조각으로 시작해요', pieces: ['W5', 'O4', 'I2'] },
+  { id: 'expansion', title: '블럭 확장판', desc: '6칸 조각 4개가 더해진 20개 조각으로 시작해요', pieces: ['H6', 'S6', 'C6'] },
 ]
+
+/** 모드 카드의 조각 3개가 110px 칸에 들어가도록 칸 크기를 줄인다 */
+function iconCell(pieces: PieceId[]) {
+  const width = pieces.reduce((sum, id) => sum + Math.max(...PIECES[id].shape.map(([x]) => x)) + 1, 0)
+  return Math.min(12, Math.floor((110 - 8) / width))
+}
 
 const TIME_OPTIONS: { value: TimeLimit | null; label: string }[] = [
   { value: null, label: '없음' },
@@ -89,7 +98,7 @@ export function StartScreen({ onStart, onResume }: { onStart: (config: GameConfi
               <button key={m.id} className={`mode-card${s.mode === m.id ? ' selected' : ''}`} onClick={() => update({ mode: m.id })}>
                 <span className="mode-pieces">
                   {m.pieces.map((id, k) => (
-                    <PieceIcon key={id} shape={PIECES[id].shape} color={COLORS[(i + k) % 4]} cellSize={12} />
+                    <PieceIcon key={id} shape={PIECES[id].shape} color={COLORS[(i + k) % 4]} cellSize={iconCell(m.pieces)} />
                   ))}
                 </span>
                 <span className="mode-text">

@@ -1,4 +1,4 @@
-// 블로커스 21개 조각 정의와 회전·뒤집기 변형.
+// 블로커스 21개 조각과 확장판 6칸 조각 정의, 회전·뒤집기 변형.
 // 좌표는 [x, y] (x: 열, y: 행), 원점은 왼쪽 위.
 
 export type Point = readonly [x: number, y: number]
@@ -28,7 +28,12 @@ export const PIECE_IDS = [
   'Z5',
 ] as const
 
-export type PieceId = (typeof PIECE_IDS)[number]
+/** 블럭 확장판에서 매 판 반드시 들어가는 6칸 조각 */
+export const HEX_PIECE_IDS = ['T6', 'C6', 'H6', 'S6'] as const
+
+export const ALL_PIECE_IDS = [...PIECE_IDS, ...HEX_PIECE_IDS] as const
+
+export type PieceId = (typeof ALL_PIECE_IDS)[number]
 
 const PATTERNS: Record<PieceId, string[]> = {
   I1: ['#'],
@@ -52,6 +57,10 @@ const PATTERNS: Record<PieceId, string[]> = {
   X5: ['.#.', '###', '.#.'],
   Y5: ['.#..', '####'],
   Z5: ['##.', '.#.', '.##'],
+  T6: ['..#..', '#####'],
+  C6: ['###', '#..', '##.'],
+  H6: ['#..', '###', '#.#'],
+  S6: ['.#..', '####', '..#.'],
 }
 
 function parsePattern(rows: string[]): Shape {
@@ -103,12 +112,13 @@ export interface PieceDef {
 }
 
 export const PIECES: Record<PieceId, PieceDef> = Object.fromEntries(
-  PIECE_IDS.map((id) => {
+  ALL_PIECE_IDS.map((id) => {
     const shape = normalize(parsePattern(PATTERNS[id]))
     return [id, { id, shape, size: shape.length, orientations: uniqueOrientations(shape) }]
   }),
 ) as Record<PieceId, PieceDef>
 
+/** 클래식 21개 조각의 총 칸 수(89) */
 export const TOTAL_CELLS = PIECE_IDS.reduce((sum, id) => sum + PIECES[id].size, 0)
 
 export function cellCount(ids: readonly PieceId[]): number {

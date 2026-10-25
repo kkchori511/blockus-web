@@ -1,7 +1,7 @@
 // 효과음. 음원 파일 없이 Web Audio로 짧은 소리를 합성한다.
 // 브라우저는 사용자 조작 전에는 소리를 막으므로 첫 터치·클릭 때 오디오를 깨운다.
 
-export type SoundName = 'place' | 'pick' | 'pass' | 'out' | 'undo' | 'tick' | 'gameOver'
+export type SoundName = 'place' | 'select' | 'rotate' | 'flip' | 'pass' | 'out' | 'allPlaced' | 'undo' | 'tick' | 'gameOver'
 
 const MUTE_KEY = 'blokus:muted'
 
@@ -78,8 +78,18 @@ export function play(name: SoundName) {
       tone(1200, 0, 0.06, { type: 'triangle', gain: 0.08 })
       tone(620, 0.03, 0.12, { gain: 0.08 })
       break
-    case 'pick':
-      tone(880, 0, 0.05, { type: 'triangle', gain: 0.05 })
+    // 조각 조작 소리는 자주 나므로 짧고 작게: 마림바 '톡', 실로폰 '뾰롱', 장난감 스프링 '뿅'
+    case 'select':
+      tone(1320, 0, 0.07, { gain: 0.07 })
+      tone(2640, 0, 0.03, { gain: 0.02 })
+      break
+    case 'rotate':
+      tone(988, 0, 0.06, { type: 'triangle', gain: 0.06 })
+      tone(1319, 0.05, 0.08, { type: 'triangle', gain: 0.06 })
+      break
+    case 'flip':
+      tone(600, 0, 0.08, { gain: 0.07, endFreq: 1400 })
+      tone(1400, 0.07, 0.09, { gain: 0.05, endFreq: 900 })
       break
     case 'pass':
       tone(440, 0, 0.14, { gain: 0.1 })
@@ -87,6 +97,10 @@ export function play(name: SoundName) {
       break
     case 'out':
       tone(520, 0, 0.35, { type: 'triangle', gain: 0.1, endFreq: 260 })
+      break
+    case 'allPlaced':
+      ;[784, 988, 1175, 1568].forEach((f, i) => tone(f, i * 0.07, 0.25, { type: 'triangle', gain: 0.09 }))
+      ;[2093, 2637, 3136].forEach((f, i) => tone(f, 0.3 + i * 0.06, 0.15, { gain: 0.03 }))
       break
     case 'undo':
       tone(500, 0, 0.16, { type: 'triangle', gain: 0.08, endFreq: 900 })

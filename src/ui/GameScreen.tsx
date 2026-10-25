@@ -1,13 +1,14 @@
 // 게임 화면: 가운데 보드, 좌우 4개 플레이어 영역, 드래그 배치와 확정, 알림, 종료 화면.
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { BOARD_SIZE, type Color, type GameConfig, type GameEvent, type GameState, type Point } from '../engine'
+import { BOARD_SIZE, colorOwners, PIECES, type Color, type GameConfig, type GameEvent, type GameState, type Point } from '../engine'
 import { clearGame } from '../game/save'
 import { useGameController, type GameController } from '../game/useGameController'
 import { Board, BOARD_UNITS, RIM } from './Board'
 import { PALETTE } from './palette'
 import { CloseIcon, HomeIcon, SoundOffIcon, SoundOnIcon } from './icons'
 import { PieceIcon, PlasticDefs } from './Plastic'
+import { BANNER_MS, OutBanner, type Banner, type BannerItem } from './OutBanner'
 import { PlayerPanel, type PanelMode } from './PlayerPanel'
 import { ResultDialog } from './ResultDialog'
 import { isMuted, play, setMuted, unlockAudio, type SoundName } from './sound'
@@ -35,7 +36,7 @@ export function GameScreen({ config, initial, onExit }: { config: GameConfig; in
   const [viewBoard, setViewBoard] = useState(false)
   const [muted, setMutedState] = useState(isMuted)
   const gameRef = useLatest(game)
-  const toasts = useGameEvents(game)
+  const { toasts, banner } = useGameEvents(game)
 
   // 브라우저는 사용자 조작 전에는 소리를 막으므로 첫 터치·클릭에서 오디오를 깨운다
   useEffect(() => {
@@ -173,6 +174,7 @@ export function GameScreen({ config, initial, onExit }: { config: GameConfig; in
               </button>
             )}
           </div>
+          {banner && <OutBanner key={banner.id} banner={banner} />}
           <div className="toasts">
             {toasts.map((t) => (
               <div key={t.id} className="toast" style={{ borderColor: t.color ? PALETTE[t.color].accent : undefined }}>
@@ -324,10 +326,11 @@ interface Toast {
   color?: Color
 }
 
-/** 새로 생긴 게임 기록마다 효과음을 내고, 자동 패스·탈락·되돌리기처럼 놓치기 쉬운 일은 잠깐 알려 준다 */
+/** 새로 생긴 게임 기록마다 효과음을 내고, 자동 패스·되돌리기는 토스트로, 색이 끝난 일은 가운데 카드로 알려 준다 */
 function useGameEvents(game: GameController) {
   const { state } = game
   const [toasts, setToasts] = useState<Toast[]>([])
+  const [banner, setBanner] = useState<Banner | null>(null)
   const seen = useRef(state.log.length)
   const nextId = useRef(0)
   const timers = useRef<number[]>([])
@@ -338,14 +341,28 @@ function useGameEvents(game: GameController) {
     seen.current = log.length
     const sound = loudest(fresh)
     if (sound) play(sound)
+    // 그 수로 게임이 끝나면 결과 화면이 바로 뜨므로 카드는 띄우지 않는다
+    const outs = fresh.flatMap((e) => (e.type === 'out' ? [e] : []))
+    if (outs.length && !fresh.some((e) => e.type === 'gameOver')) {
+      const id = nextId.current++
+      setBanner({ id, items: outs.map((e) => bannerItem(state, e.color, e.reason === 'allPlaced')) })
+      timers.current.push(window.setTimeout(() => setBanner((prev) => (prev?.id === id ? null : prev)), BANNER_MS))
+    }
     const items = fresh.map((e) => describe(e, state.config.playerNames)).filter((t): t is Omit<Toast, 'id'> => !!t)
     if (!items.length) return
     const added = items.map((t) => ({ ...t, id: nextId.current++ }))
     setToasts((prev) => [...prev, ...added].slice(-3))
     timers.current.push(window.setTimeout(() => setToasts((prev) => prev.filter((t) => !added.includes(t))), 2800))
-  }, [state.log, state.config.playerNames])
+  }, [state])
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
-  return toasts
+  return { toasts, banner }
+}
+
+function bannerItem(state: GameState, color: Color, allPlaced: boolean): BannerItem {
+  const owner = colorOwners(state.config.playerCount)[color]
+  const name = owner === 'shared' ? '공용' : state.config.playerNames[owner]
+  const bonus = allPlaced && !state.config.options.hideRemaining ? (state.lastPiece[color] && PIECES[state.lastPiece[color]!].size === 1 ? 20 : 15) : null
+  return { color, who: `${PALETTE[color].name} · ${name}`, allPlaced, bonus }
 }
 
 /** 한 번에 여러 일이 생기면(놓자마자 다음 색이 자동 탈락 등) 가장 중요한 소리 하나만 낸다 */
@@ -353,6 +370,7 @@ function loudest(events: GameEvent[]): SoundName | null {
   const types = new Set(events.map((e) => (e.type === 'pass' ? 'pass' : e.type)))
   if (types.has('gameOver')) return 'gameOver'
   if (types.has('undo')) return 'undo'
+  if (events.some((e) => e.type === 'out' && e.reason === 'allPlaced')) return 'allPlaced'
   if (types.has('place')) return 'place'
   if (types.has('out')) return 'out'
   if (types.has('pass')) return 'pass'
@@ -366,10 +384,6 @@ function describe(e: GameEvent, names: string[]): Omit<Toast, 'id'> | null {
       const why = { timeout: '시간 초과로 패스', blockedDraw: '뽑힌 조각을 놓을 자리가 없어 패스', manual: '패스' }[e.reason]
       return { text: `${who} ${why}`, color: e.color }
     }
-    case 'out':
-      return e.reason === 'allPlaced'
-        ? { text: `${PALETTE[e.color].name} 모든 조각을 놓았습니다!`, color: e.color }
-        : { text: `${PALETTE[e.color].name} 더 놓을 곳이 없어 끝났습니다`, color: e.color }
     case 'undo':
       return { text: `${names[e.player]} 되돌리기`, color: e.color }
     default:

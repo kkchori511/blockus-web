@@ -1,5 +1,5 @@
 export * from './board'
-export * from './dailySet'
+export * from './expansion'
 export * from './game'
 export * from './pieces'
 export * from './rng'

@@ -4,7 +4,7 @@ import type { GameState } from '../engine'
 
 const KEY = 'blokus:game'
 // 저장 형식이 바뀌면 올려서 예전 저장본을 무시한다
-const VERSION = 1
+const VERSION = 2
 
 export function saveGame(state: GameState) {
   try {

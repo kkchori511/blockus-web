@@ -9,11 +9,11 @@ import {
   isValidPlacement,
   type Color,
 } from './board'
-import { DEFAULT_DAILY_SET, generateDailySet, type DailySetSpec } from './dailySet'
+import { generateExpansionSet } from './expansion'
 import { PIECES, PIECE_IDS, normalize, shapeKey, type PieceId, type Shape } from './pieces'
 import { createRng, randomInt } from './rng'
 
-export type GameMode = 'classic' | 'allRandom' | 'dailySet'
+export type GameMode = 'classic' | 'allRandom' | 'expansion'
 export type PlayerCount = 2 | 3 | 4
 export type TimeLimit = 15 | 30 | 60
 
@@ -29,7 +29,6 @@ export interface GameConfig {
   mode: GameMode
   options: GameOptions
   seed: number
-  dailySet?: DailySetSpec
 }
 
 /** 색을 맡은 플레이어 번호. 3인일 때 초록은 세 사람이 번갈아 놓는 공용 색이다. */
@@ -55,7 +54,7 @@ export type GameEvent =
 
 export interface GameState {
   config: GameConfig
-  /** 각 색이 시작할 때 받은 조각들(클래식·올랜덤은 21개, 오늘의 세트는 뽑힌 세트) */
+  /** 각 색이 시작할 때 받은 조각들(클래식·올랜덤은 21개, 블럭 확장판은 뽑힌 20개) */
   pieceSet: PieceId[]
   board: number[]
   remaining: PieceId[][]
@@ -92,7 +91,7 @@ export function currentPlayer(state: GameState): number {
 
 export function createGame(config: GameConfig): GameState {
   const rng = createRng(config.seed)
-  const pieceSet = config.mode === 'dailySet' ? generateDailySet(rng, config.dailySet ?? DEFAULT_DAILY_SET) : [...PIECE_IDS]
+  const pieceSet = config.mode === 'expansion' ? generateExpansionSet(rng) : [...PIECE_IDS]
   const state: GameState = {
     config,
     pieceSet,

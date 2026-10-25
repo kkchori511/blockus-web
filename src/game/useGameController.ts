@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { chooseMove } from '../engine/sim'
+import { play } from '../ui/sound'
 import {
   canPlace,
   createRng,
@@ -86,6 +87,7 @@ export function useGameController(config: GameConfig, initial?: GameState) {
   const step = useCallback(
     (delta: number) => {
       setIndex((i) => (i ?? defaultIndex(choices)) + delta)
+      play('select')
       setOrientation({ rotation: 0, flipped: false })
       setPending(null)
     },
@@ -97,6 +99,7 @@ export function useGameController(config: GameConfig, initial?: GameState) {
       const i = choices.indexOf(pieceId)
       if (i < 0) return
       setIndex(i)
+      play('select')
       setOrientation({ rotation: 0, flipped: false })
       setPending(null)
     },
@@ -117,8 +120,14 @@ export function useGameController(config: GameConfig, initial?: GameState) {
     [orientation, pending, selected, shape],
   )
 
-  const rotate = useCallback(() => reorient((o) => ({ ...o, rotation: (o.rotation + 1) % 4 })), [reorient])
-  const flip = useCallback(() => reorient((o) => ({ ...o, flipped: !o.flipped })), [reorient])
+  const rotate = useCallback(() => {
+    if (selected) play('rotate')
+    reorient((o) => ({ ...o, rotation: (o.rotation + 1) % 4 }))
+  }, [reorient, selected])
+  const flip = useCallback(() => {
+    if (selected) play('flip')
+    reorient((o) => ({ ...o, flipped: !o.flipped }))
+  }, [reorient, selected])
 
   /** 보드의 칸을 가리켜 조각을 올려 둔다(확정 전). */
   const putAt = useCallback(
