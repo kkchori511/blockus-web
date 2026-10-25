@@ -5,7 +5,7 @@ import { BOARD_SIZE, playerScores, type Color, type GameConfig, type GameEvent, 
 import { useGameController, type GameController } from '../game/useGameController'
 import { Board, BOARD_UNITS, RIM } from './Board'
 import { PALETTE } from './palette'
-import { CloseIcon } from './icons'
+import { CloseIcon, HomeIcon } from './icons'
 import { PieceIcon, PlasticDefs } from './Plastic'
 import { PlayerPanel, type PanelMode } from './PlayerPanel'
 
@@ -27,6 +27,7 @@ export function GameScreen({ config, onExit }: { config: GameConfig; onExit?: ()
   const sideRef = useRef<HTMLDivElement>(null)
   const sideWidth = useElementWidth(sideRef)
   const [drag, setDrag] = useState<Drag | null>(null)
+  const [confirmExit, setConfirmExit] = useState(false)
   const gameRef = useLatest(game)
   const toasts = useEventToasts(game)
 
@@ -133,6 +134,11 @@ export function GameScreen({ config, onExit }: { config: GameConfig; onExit?: ()
             preview={game.pendingCells ? { color: state.current, cells: game.pendingCells, valid: game.pendingValid } : null}
           />
           {game.pendingCells && !drag && <PendingActions game={game} />}
+          {onExit && !state.over && (
+            <button className="home-btn" onClick={() => setConfirmExit(true)} aria-label="처음으로" title="처음으로">
+              <HomeIcon />
+            </button>
+          )}
           <div className="toasts">
             {toasts.map((t) => (
               <div key={t.id} className="toast" style={{ borderColor: t.color ? PALETTE[t.color].accent : undefined }}>
@@ -157,6 +163,23 @@ export function GameScreen({ config, onExit }: { config: GameConfig; onExit?: ()
       )}
 
       {state.over && <GameOver game={game} onExit={onExit} />}
+
+      {confirmExit && onExit && (
+        <div className="overlay" onClick={() => setConfirmExit(false)}>
+          <div className="result" onClick={(e) => e.stopPropagation()}>
+            <h2>게임을 그만둘까요?</h2>
+            <p className="dialog-text">지금 진행 중인 게임은 사라지고 시작 화면으로 돌아갑니다.</p>
+            <div className="result-actions">
+              <button className="ghost-btn" onClick={() => setConfirmExit(false)}>
+                계속하기
+              </button>
+              <button className="confirm-btn" onClick={onExit}>
+                그만두기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

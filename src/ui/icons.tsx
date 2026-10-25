@@ -46,6 +46,13 @@ export const ChevronRightIcon = () => (
   </svg>
 )
 
+export const HomeIcon = () => (
+  <svg {...base}>
+    <path d="M3 11 12 4l9 7" />
+    <path d="M5 10v10h14V10" />
+  </svg>
+)
+
 export const CloseIcon = () => (
   <svg {...base}>
     <path d="M18 6 6 18M6 6l12 12" />
