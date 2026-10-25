@@ -1,32 +1,38 @@
-# React + TypeScript + Vite
+# 블로커스 웹
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+한 화면에서 2~4명이 함께 하는 로컬 대전 블로커스입니다. PC 모니터와 태블릿 가로 화면(16:9 기준, 4:3 대응)을 대상으로 합니다.
 
-Currently, two official plugins are available:
+## 게임 모드
+- **클래식**: 21개 조각을 모두 쓰는 기본 규칙
+- **올랜덤**: 매 턴 낼 조각이 남은 조각 중에서 무작위로 정해지고, 놓을 자리가 없으면 패스
+- **오늘의 세트**: 모두 같은 무작위 16개 조각(총 66~70칸)으로 시작
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 옵션
+- 시간 제한 15초 · 30초 · 1분 (시간 초과 시 자동 패스)
+- 남은 블럭 숨김 (내 차례에만 내 조각이 보이고, 점수는 끝나고 공개)
+- 되돌리기 허용 (다음 사람이 놓기 전까지 방금 놓은 수 취소)
 
-## React Compiler
+## 인원별 규칙
+- 4인: 한 사람이 한 색
+- 3인: 초록은 세 사람이 번갈아 놓는 공용 색이며 점수에서 제외
+- 2인: 한 사람이 마주 보는 두 색(파랑+빨강, 노랑+초록)을 맡고 점수 합산
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 개발
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev        # 개발 서버
+npm test           # 엔진 테스트
+npm run simulate   # 오늘의 세트 규격 시뮬레이션
+npm run build      # 배포용 빌드
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+개발 서버에서는 주소에 설정을 붙여 시작 화면을 건너뛸 수 있습니다.
+예: `/?players=3&mode=allRandom&timer=30&hide=1&undo=1&names=가,나,다`
+브라우저 콘솔에서 `__autoplay(30)`을 실행하면 30수를 자동으로 둡니다.
+
+## 구조
+- `src/engine/` — 규칙 엔진(조각, 배치 판정, 턴 진행, 점수). UI와 독립된 순수 TypeScript
+- `src/game/` — 화면 상태 관리(캐러셀 선택, 회전·뒤집기, 확정 대기)
+- `src/ui/` — 보드·투명 플라스틱 조각(SVG), 플레이어 영역, 캐러셀, 시작 화면
+- `design/` — 콘셉트 목업, 단계별 스크린샷, 검토 문서
