@@ -51,7 +51,7 @@ function saveSettings(s: Settings) {
 const MODES: { id: GameMode; title: string; desc: string; pieces: PieceId[] }[] = [
   { id: 'classic', title: '클래식', desc: '21개 조각을 모두 쓰는 기본 규칙', pieces: ['F5', 'L4', 'I3'] },
   { id: 'allRandom', title: '올랜덤', desc: '매 턴 낼 조각이 무작위로 정해져요. 못 놓으면 패스!', pieces: ['X5', 'T4', 'V3'] },
-  { id: 'expansion', title: '블럭 확장판', desc: '6칸 조각 4개가 더해진 20개 조각으로 시작해요', pieces: ['H6', 'S6', 'C6'] },
+  { id: 'expansion', title: '블럭 확장판', desc: '6칸 조각 4개가 더해진 19개 조각으로 시작해요', pieces: ['H6', 'S6', 'C6'] },
 ]
 
 /** 모드 카드의 조각 3개가 110px 칸에 들어가도록 칸 크기를 줄인다 */

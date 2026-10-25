@@ -54,7 +54,7 @@ export type GameEvent =
 
 export interface GameState {
   config: GameConfig
-  /** 각 색이 시작할 때 받은 조각들(클래식·올랜덤은 21개, 블럭 확장판은 뽑힌 20개) */
+  /** 각 색이 시작할 때 받은 조각들(클래식·올랜덤은 21개, 블럭 확장판은 뽑힌 19개) */
   pieceSet: PieceId[]
   board: number[]
   remaining: PieceId[][]

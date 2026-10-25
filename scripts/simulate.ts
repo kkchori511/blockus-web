@@ -60,7 +60,7 @@ for (const policy of ['bigFirst', 'random'] as const) {
   console.log(`${policy} | ${f1(s.placedCells)} | ${f1(s.placedPieces)} | ${pct(s.allPlacedRate)} | ${f1(s.turns)}`)
 }
 
-console.log('\n## 블럭 확장판 (6칸 4개 + 클래식 16개 = 20개 / 89칸)')
+console.log('\n## 블럭 확장판 (6칸 4개 + 클래식 15개 = 19개 / 84칸)')
 console.log('정책 | 놓은 칸 | 놓은 조각 | 전부 놓은 비율 | 판당 배치 수')
 for (const policy of ['bigFirst', 'random'] as const) {
   const s = run(4, policy, { mode: 'expansion' })

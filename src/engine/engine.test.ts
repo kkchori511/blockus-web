@@ -216,14 +216,15 @@ describe('올랜덤', () => {
 })
 
 describe('블럭 확장판', () => {
-  it('6칸 4개를 반드시 넣고 1~3칸은 남기며, 20개·89칸으로 맞추고 모든 색이 같은 세트를 받는다', () => {
+  it('6칸 4개를 반드시 넣고 Y5는 빼고 1~3칸은 남기며, 19개·84칸으로 맞추고 모든 색이 같은 세트를 받는다', () => {
     for (let seed = 0; seed < 50; seed++) {
       const set = generateExpansionSet(createRng(seed))
-      expect(new Set(set).size).toBe(20)
-      expect(cellCount(set)).toBe(TOTAL_CELLS)
+      expect(new Set(set).size).toBe(19)
+      expect(cellCount(set)).toBe(84)
+      expect(set).not.toContain('Y5')
       expect(HEX_PIECE_IDS.every((id) => set.includes(id))).toBe(true)
       expect(['I1', 'I2', 'I3', 'V3'].every((id) => set.includes(id as PieceId))).toBe(true)
-      expect(set.filter((id) => PIECES[id].size === 5)).toHaveLength(8)
+      expect(set.filter((id) => PIECES[id].size === 5)).toHaveLength(7)
       expect(set.filter((id) => PIECES[id].size === 4)).toHaveLength(4)
     }
     const state = createGame(config({ mode: 'expansion' }))
