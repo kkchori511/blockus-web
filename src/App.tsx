@@ -1,122 +1,69 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+// 3단계 렌더링 확인용 화면: 시뮬레이션으로 만든 게임 중반 상태를 보드와 영역에 그린다.
+// 4단계에서 실제 플레이어 영역·캐러셀로 바뀐다.
 
-function App() {
-  const [count, setCount] = useState(0)
+import { useMemo } from 'react'
+import { createGame, createRng, PIECES, place, placedCells, type Color, type GameState } from './engine'
+import { chooseMove } from './engine/sim'
+import { Board, type BoardPreview } from './ui/Board'
+import { PALETTE } from './ui/palette'
+import { PieceIcon, PlasticDefs } from './ui/Plastic'
 
+function demoState(moves: number): { state: GameState; preview: BoardPreview | null } {
+  const rng = createRng(7)
+  let state = createGame({
+    playerCount: 4,
+    playerNames: ['Player 1', 'Player 2', 'Player 3', 'Player 4'],
+    mode: 'classic',
+    options: { timeLimit: 30, hideRemaining: false, allowUndo: true },
+    seed: 11,
+  })
+  for (let i = 0; i < moves && !state.over; i++) {
+    const m = chooseMove(state, 'bigFirst', rng)!
+    state = place(state, m.pieceId, m.cells)
+  }
+  const next = state.over ? null : chooseMove(state, 'bigFirst', rng)
+  return { state, preview: next ? { color: state.current, cells: next.cells, valid: true } : null }
+}
+
+function Panel({ state, color }: { state: GameState; color: Color }) {
+  const tone = PALETTE[color]
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    <section className="panel" style={{ background: tone.panel, outlineColor: state.current === color ? tone.accent : 'transparent' }}>
+      <header className="panel-head">
+        <span className="swatch" style={{ background: tone.base }} />
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
+          <div className="panel-name">{state.config.playerNames[color]}</div>
+          <div className="panel-score">{placedCells(state, color)}</div>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      </header>
+      <div className="tray">
+        {state.remaining[color].map((id) => (
+          <PieceIcon key={id} shape={PIECES[id].shape} color={color} cellSize={14} />
+        ))}
+      </div>
+    </section>
   )
 }
 
-export default App
+export default function App() {
+  const moves = Number(new URLSearchParams(location.search).get('moves') ?? 32)
+  const { state, preview } = useMemo(() => demoState(moves), [moves])
+  return (
+    <>
+      <PlasticDefs />
+      <main className="stage">
+        <div className="side">
+          <Panel state={state} color={0} />
+          <Panel state={state} color={3} />
+        </div>
+        <div className="board-wrap">
+          <Board state={state} preview={preview} />
+        </div>
+        <div className="side">
+          <Panel state={state} color={1} />
+          <Panel state={state} color={2} />
+        </div>
+      </main>
+    </>
+  )
+}

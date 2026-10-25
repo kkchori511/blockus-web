@@ -77,6 +77,12 @@ describe('배치 규칙', () => {
     expect(isValidPlacement(board, 0, [[1, 1]], false)).toBe(true)
   })
 
+  it('정수가 아닌 좌표는 거부한다', () => {
+    const board = createBoard()
+    board[0] = 0
+    expect(isValidPlacement(board, 0, [[1.5, 0.975]], false)).toBe(false)
+  })
+
   it('보드 밖이나 이미 찬 칸에는 놓을 수 없다', () => {
     const board = createBoard()
     board[0] = 0
@@ -110,6 +116,16 @@ describe('턴 진행', () => {
     const state = passTurn(createGame(config()))
     expect(state.current).toBe(1)
     expect(state.log.at(-1)).toMatchObject({ type: 'pass', reason: 'timeout', color: 0 })
+  })
+
+  it('배치 후 넘긴 좌표 배열을 바꿔도 기록은 그대로다', () => {
+    const cells: [number, number][] = [
+      [0, 0],
+      [1, 0],
+    ]
+    const state = place(createGame(config()), 'I2', cells)
+    cells[0][0] = 10
+    expect(state.log.find((e) => e.type === 'place')).toMatchObject({ cells: [[0, 0], [1, 0]] })
   })
 
   it('놓을 수 없는 수는 거부한다', () => {

@@ -189,7 +189,8 @@ export function place(state: GameState, pieceId: PieceId, cells: Shape): GameSta
   s.board = applyPlacement(s.board, color, cells)
   s.remaining[color] = s.remaining[color].filter((id) => id !== pieceId)
   s.lastPiece[color] = pieceId
-  s.log.push({ type: 'place', color, player, pieceId, cells })
+  // 호출자가 좌표 배열을 재사용해도 기록이 바뀌지 않게 복사해 둔다
+  s.log.push({ type: 'place', color, player, pieceId, cells: cells.map(([x, y]) => [x, y] as const) })
   if (s.remaining[color].length === 0) {
     s.out[color] = true
     s.log.push({ type: 'out', color, reason: 'allPlaced' })

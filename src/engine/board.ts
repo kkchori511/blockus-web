@@ -38,7 +38,7 @@ const DIAG_DIRS: Point[] = [
 ]
 
 function inBounds(x: number, y: number): boolean {
-  return x >= 0 && y >= 0 && x < BOARD_SIZE && y < BOARD_SIZE
+  return Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x < BOARD_SIZE && y < BOARD_SIZE
 }
 
 export function at(board: Board, x: number, y: number): number {
