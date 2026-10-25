@@ -63,8 +63,8 @@ export function Carousel({ choices, index, color, centerShape, cellSize, onStep,
             key={id}
             className={`carousel-item${center ? ' center' : ''}`}
             style={{
-              transform: `translateX(${o * 64}%) scale(${center ? 1 : 0.58}) rotateY(${-o * 28}deg)`,
-              opacity: Math.abs(o) >= 2 ? 0 : center ? 1 : 0.6,
+              transform: `translateX(calc(${o} * 40cqw)) scale(${center ? 1 : 0.5}) rotateY(${-o * 28}deg)`,
+              opacity: Math.abs(o) >= 2 ? 0 : center ? 1 : 0.5,
               zIndex: 10 - Math.abs(o),
             }}
             onPointerDown={
@@ -77,7 +77,8 @@ export function Carousel({ choices, index, color, centerShape, cellSize, onStep,
             }
             onClick={center || Math.abs(o) >= 2 ? undefined : () => onStep(o)}
           >
-            <PieceIcon shape={shape} color={color} cellSize={cellSize} />
+            {/* 가로로 긴 조각은 옆 조각과 겹치지 않게 캐러셀 폭의 약 55% 안으로 줄인다(cellSize×6 ≈ 캐러셀 폭) */}
+            <PieceIcon shape={shape} color={color} cellSize={cellSize * Math.min(1, 3.3 / (Math.max(...shape.map(([x]) => x)) + 1))} />
           </div>
         )
       })}

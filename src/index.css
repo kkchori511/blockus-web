@@ -212,6 +212,8 @@ button:disabled {
 
 .carousel {
   position: relative;
+  /* 옆 조각 간격을 캐러셀 폭(cqw) 기준으로 잡아 긴 조각도 겹치지 않게 한다 */
+  container-type: inline-size;
   flex: 1 1 auto;
   min-height: 150px;
   perspective: 700px;

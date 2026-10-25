@@ -41,9 +41,17 @@ export function originForCenter(shape: Shape, cell: Point): Point {
   return [cell[0] - Math.floor((w - 1) / 2), cell[1] - Math.floor((h - 1) / 2)]
 }
 
+/** 턴을 시작할 때 처음 보여 줄 조각: 가장 큰 조각 중 첫 번째(보통 5칸짜리부터 쓰므로) */
+function defaultIndex(choices: PieceId[]): number {
+  if (choices.length === 0) return 0
+  const maxSize = Math.max(...choices.map((id) => PIECES[id].size))
+  return choices.findIndex((id) => PIECES[id].size === maxSize)
+}
+
 export function useGameController(config: GameConfig) {
   const [state, setState] = useState<GameState>(() => createGame(config))
-  const [index, setIndex] = useState(0)
+  /** null이면 턴 시작 기본 위치(defaultIndex) */
+  const [chosenIndex, setIndex] = useState<number | null>(null)
   const [orientation, setOrientation] = useState<Orientation>({ rotation: 0, flipped: false })
   const [pending, setPending] = useState<Pending | null>(null)
 
@@ -54,6 +62,7 @@ export function useGameController(config: GameConfig) {
     return state.remaining[state.current]
   }, [state])
 
+  const index = chosenIndex ?? defaultIndex(choices)
   const selected: PieceId | null = choices.length ? choices[((index % choices.length) + choices.length) % choices.length] : null
   const shape = selected ? orientedShape(selected, orientation) : null
 
@@ -61,18 +70,18 @@ export function useGameController(config: GameConfig) {
   const pendingValid = !!(pending && pendingCells && canPlace(state, pending.pieceId, pendingCells))
 
   const resetSelection = () => {
-    setIndex(0)
+    setIndex(null)
     setOrientation({ rotation: 0, flipped: false })
     setPending(null)
   }
 
   const step = useCallback(
     (delta: number) => {
-      setIndex((i) => i + delta)
+      setIndex((i) => (i ?? defaultIndex(choices)) + delta)
       setOrientation({ rotation: 0, flipped: false })
       setPending(null)
     },
-    [],
+    [choices],
   )
 
   const select = useCallback(
