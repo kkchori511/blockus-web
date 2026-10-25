@@ -11,21 +11,28 @@ export interface BannerItem {
   allPlaced: boolean
   /** 모두 놓았을 때 받는 보너스. 남은 조각 숨기기 옵션이면 점수를 숨기므로 null */
   bonus: number | null
+  /** 3인 공용 색: 점수에 들어가지 않는다 */
+  shared: boolean
 }
 
 export interface Banner {
   id: number
   items: BannerItem[]
+  /** 새 항목이 붙을 때마다 바뀌어 카드 애니메이션(3초)을 처음부터 다시 돌린다 */
+  rev: number
+  /** 모두 놓은 색이 생길 때마다 한 번씩 터뜨리는 폭죽 */
+  bursts: { id: number; colors: Color[] }[]
 }
 
 export const BANNER_MS = 3000
 
 export function OutBanner({ banner }: { banner: Banner }) {
-  const celebrate = banner.items.filter((i) => i.allPlaced).map((i) => i.color)
   return (
     <div className="out-banner-layer">
-      {celebrate.length > 0 && <Confetti colors={celebrate} />}
-      <div className="out-banner" style={{ animationDuration: `${BANNER_MS}ms` }}>
+      {banner.bursts.map((b) => (
+        <Confetti key={b.id} colors={b.colors} />
+      ))}
+      <div key={banner.rev} className="out-banner" style={{ animationDuration: `${BANNER_MS}ms` }}>
         {banner.items.map((item) => (
           <div key={item.color} className={`out-row${item.allPlaced ? ' all-placed' : ''}`}>
             <span className="out-who">
@@ -35,6 +42,7 @@ export function OutBanner({ banner }: { banner: Banner }) {
             <span className="out-msg" style={{ color: item.allPlaced ? PLASTIC[item.color].dark : undefined }}>
               {item.allPlaced ? '모든 조각을 놓았어요!' : '더 놓을 곳이 없어요'}
               {item.bonus !== null && <span className="out-bonus">+{item.bonus}</span>}
+              {item.allPlaced && item.shared && <span className="out-note">점수 제외</span>}
             </span>
           </div>
         ))}
@@ -77,7 +85,7 @@ function Confetti({ colors }: { colors: Color[] }) {
     })
   })
   return (
-    <div className="confetti">
+    <div className="confetti" aria-hidden="true">
       {particles.map((p, i) => (
         <span
           key={i}

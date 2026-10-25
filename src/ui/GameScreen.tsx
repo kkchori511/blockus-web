@@ -36,7 +36,7 @@ export function GameScreen({ config, initial, onExit }: { config: GameConfig; in
   const [viewBoard, setViewBoard] = useState(false)
   const [muted, setMutedState] = useState(isMuted)
   const gameRef = useLatest(game)
-  const { toasts, banner } = useGameEvents(game)
+  const { toasts, banner, holdResult, announcement } = useGameEvents(game)
 
   // 브라우저는 사용자 조작 전에는 소리를 막으므로 첫 터치·클릭에서 오디오를 깨운다
   useEffect(() => {
@@ -175,6 +175,9 @@ export function GameScreen({ config, initial, onExit }: { config: GameConfig; in
             )}
           </div>
           {banner && <OutBanner key={banner.id} banner={banner} />}
+          <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+            {announcement}
+          </div>
           <div className="toasts">
             {toasts.map((t) => (
               <div key={t.id} className="toast" style={{ borderColor: t.color ? PALETTE[t.color].accent : undefined }}>
@@ -198,10 +201,10 @@ export function GameScreen({ config, initial, onExit }: { config: GameConfig; in
         </div>
       )}
 
-      {state.over && !viewBoard && (
+      {state.over && !holdResult && !viewBoard && (
         <ResultDialog state={state} onRestart={game.restart} onExit={onExit ? exit : undefined} onViewBoard={() => setViewBoard(true)} />
       )}
-      {state.over && viewBoard && (
+      {state.over && !holdResult && viewBoard && (
         <button className="confirm-btn show-result-btn" onClick={() => setViewBoard(false)}>
           결과 보기
         </button>
@@ -326,43 +329,102 @@ interface Toast {
   color?: Color
 }
 
-/** 새로 생긴 게임 기록마다 효과음을 내고, 자동 패스·되돌리기는 토스트로, 색이 끝난 일은 가운데 카드로 알려 준다 */
+/**
+ * 새로 생긴 게임 기록마다 효과음을 내고, 자동 패스·되돌리기는 토스트로, 색이 끝난 일은 가운데 카드로 알려 준다.
+ * 같은 내용을 화면 낭독기용 문장(announcement)으로도 내보낸다.
+ */
 function useGameEvents(game: GameController) {
   const { state } = game
   const [toasts, setToasts] = useState<Toast[]>([])
   const [banner, setBanner] = useState<Banner | null>(null)
+  /** 마지막 색이 모두 놓아 끝났을 때, 축하 카드를 보여 주는 동안 결과 화면을 미룬다 */
+  const [holdResult, setHoldResult] = useState(false)
+  const [announcement, setAnnouncement] = useState('')
   const seen = useRef(state.log.length)
   const nextId = useRef(0)
   const timers = useRef<number[]>([])
+  const bannerTimer = useRef<number | undefined>(undefined)
   useEffect(() => {
     const log = state.log
-    // 되돌리기는 예전 기록으로 돌아간 뒤 undo 하나를 덧붙이므로 길이가 줄 수 있다
-    const fresh = log.length > seen.current ? log.slice(seen.current) : log.at(-1)?.type === 'undo' ? [log.at(-1)!] : []
+    const undone = log.length <= seen.current && log.at(-1)?.type === 'undo'
+    // 되돌리기는 예전 기록으로 돌아간 뒤 undo 하나를 덧붙이므로 길이가 줄 수 있다. 그 밖에 줄어들면 새 게임이다.
+    const fresh = log.length > seen.current ? log.slice(seen.current) : undone ? [log.at(-1)!] : []
+    const restarted = log.length < seen.current && !undone
     seen.current = log.length
-    const sound = loudest(fresh)
-    if (sound) play(sound)
-    // 그 수로 게임이 끝나면 결과 화면이 바로 뜨므로 카드는 띄우지 않는다
     const outs = fresh.flatMap((e) => (e.type === 'out' ? [e] : []))
-    if (outs.length && !fresh.some((e) => e.type === 'gameOver')) {
-      const id = nextId.current++
-      setBanner({ id, items: outs.map((e) => bannerItem(state, e.color, e.reason === 'allPlaced')) })
-      timers.current.push(window.setTimeout(() => setBanner((prev) => (prev?.id === id ? null : prev)), BANNER_MS))
+    const over = fresh.some((e) => e.type === 'gameOver')
+    const finale = over && outs.some((e) => e.reason === 'allPlaced')
+    if (undone || restarted || (over && !finale)) {
+      // 취소된 종료나 결과 화면 뒤에 가려질 카드는 남기지 않는다
+      clearTimeout(bannerTimer.current)
+      setBanner(null)
+      setHoldResult(false)
     }
+
+    if (finale) {
+      // 축하음과 폭죽을 먼저, 3초 뒤 결과 화면과 종료음
+      play('allPlaced')
+      setHoldResult(true)
+      timers.current.push(
+        window.setTimeout(() => {
+          setHoldResult(false)
+          play('gameOver')
+        }, BANNER_MS),
+      )
+    } else {
+      const sound = loudest(fresh)
+      if (sound) play(sound)
+    }
+
+    // 그 수로 게임이 끝나면 결과 화면이 바로 뜨므로 카드는 띄우지 않는다(마지막 색이 모두 놓은 경우는 예외)
+    if (outs.length && (!over || finale)) {
+      const items = outs.map((e) => bannerItem(state, e.color, e.reason === 'allPlaced'))
+      const celebrate = items.filter((i) => i.allPlaced).map((i) => i.color)
+      const burst = celebrate.length ? [{ id: nextId.current++, colors: celebrate }] : []
+      const id = nextId.current++
+      // 카드가 떠 있으면 새 항목을 붙이고 3초를 다시 센다
+      setBanner((prev) =>
+        prev
+          ? { ...prev, rev: id, items: [...prev.items.filter((i) => !items.some((n) => n.color === i.color)), ...items], bursts: [...prev.bursts, ...burst] }
+          : { id, rev: id, items, bursts: burst },
+      )
+      clearTimeout(bannerTimer.current)
+      bannerTimer.current = window.setTimeout(() => setBanner(null), BANNER_MS)
+    }
+
     const items = fresh.map((e) => describe(e, state.config.playerNames)).filter((t): t is Omit<Toast, 'id'> => !!t)
+    const spoken = [...items.map((t) => t.text), ...outs.map((e) => spokenOut(state, e.color, e.reason === 'allPlaced'))]
+    if (spoken.length) setAnnouncement(spoken.join('. '))
     if (!items.length) return
     const added = items.map((t) => ({ ...t, id: nextId.current++ }))
     setToasts((prev) => [...prev, ...added].slice(-3))
     timers.current.push(window.setTimeout(() => setToasts((prev) => prev.filter((t) => !added.includes(t))), 2800))
   }, [state])
-  useEffect(() => () => timers.current.forEach(clearTimeout), [])
-  return { toasts, banner }
+  useEffect(
+    () => () => {
+      timers.current.forEach(clearTimeout)
+      clearTimeout(bannerTimer.current)
+    },
+    [],
+  )
+  return { toasts, banner, holdResult, announcement }
+}
+
+function ownerName(state: GameState, color: Color) {
+  const owner = colorOwners(state.config.playerCount)[color]
+  return owner === 'shared' ? '공용' : state.config.playerNames[owner]
 }
 
 function bannerItem(state: GameState, color: Color, allPlaced: boolean): BannerItem {
-  const owner = colorOwners(state.config.playerCount)[color]
-  const name = owner === 'shared' ? '공용' : state.config.playerNames[owner]
-  const bonus = allPlaced && !state.config.options.hideRemaining ? (state.lastPiece[color] && PIECES[state.lastPiece[color]!].size === 1 ? 20 : 15) : null
-  return { color, who: `${PALETTE[color].name} · ${name}`, allPlaced, bonus }
+  const shared = colorOwners(state.config.playerCount)[color] === 'shared'
+  const lastIsMonomino = state.lastPiece[color] !== null && PIECES[state.lastPiece[color]!].size === 1
+  // 공용 색은 점수에 들어가지 않고, 숨김 옵션이면 점수를 끝날 때까지 감춘다
+  const bonus = allPlaced && !shared && !state.config.options.hideRemaining ? (lastIsMonomino ? 20 : 15) : null
+  return { color, who: `${PALETTE[color].name} · ${ownerName(state, color)}`, allPlaced, bonus, shared }
+}
+
+function spokenOut(state: GameState, color: Color, allPlaced: boolean) {
+  return `${PALETTE[color].name}, ${ownerName(state, color)}, ${allPlaced ? '모든 조각을 놓았습니다' : '더 놓을 곳이 없어 끝났습니다'}`
 }
 
 /** 한 번에 여러 일이 생기면(놓자마자 다음 색이 자동 탈락 등) 가장 중요한 소리 하나만 낸다 */

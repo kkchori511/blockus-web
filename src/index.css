@@ -497,6 +497,12 @@ button:disabled {
   white-space: nowrap;
 }
 
+.out-note {
+  font-size: 0.5em;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
 .out-bonus {
   padding: 2px 12px;
   border-radius: 999px;
@@ -556,10 +562,36 @@ button:disabled {
   }
 }
 
+@keyframes out-banner-fade {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  8%,
+  88% {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .confetti {
     display: none;
   }
+
+  .out-banner {
+    animation-name: out-banner-fade;
+  }
+}
+
+/* 화면에는 보이지 않고 화면 낭독기만 읽는 영역 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* ---------- 종료 ---------- */
