@@ -2,6 +2,8 @@
 
 한 화면에서 2~4명이 함께 하는 로컬 대전 블로커스입니다. PC 모니터와 태블릿 가로 화면(16:9 기준, 4:3 대응)을 대상으로 합니다.
 
+**플레이: https://kkchori511.github.io/blockus-web/** (태블릿에서 홈 화면에 추가하면 전체 화면·오프라인으로 실행)
+
 ## 게임 모드
 - **클래식**: 21개 조각을 모두 쓰는 기본 규칙
 - **올랜덤**: 매 턴 낼 조각이 남은 조각 중에서 무작위로 정해지고, 놓을 자리가 없으면 패스
@@ -24,8 +26,11 @@ npm install
 npm run dev        # 개발 서버
 npm test           # 엔진 테스트
 npm run simulate   # 모드별 밀도 시뮬레이션
-npm run build      # 배포용 빌드
+npm run build      # 배포용 빌드(/blockus-web/ 하위 경로)
+npm run preview    # 빌드 결과 확인: http://localhost:4173/blockus-web/
 ```
+
+main에 push하면 GitHub Actions(`.github/workflows/deploy.yml`)가 테스트·빌드 후 GitHub Pages에 배포합니다.
 
 개발 서버에서는 주소에 설정을 붙여 시작 화면을 건너뛸 수 있습니다.
 예: `/?players=3&mode=allRandom&timer=30&hide=1&undo=1&names=가,나,다`
