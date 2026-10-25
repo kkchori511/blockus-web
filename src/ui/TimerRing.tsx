@@ -2,6 +2,7 @@
 // 턴이 바뀌면(turnId) 부모가 key를 바꿔 새로 시작시킨다.
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { play } from './sound'
 
 export function TimerRing({ seconds, color, running, onExpire, size = 44 }: { seconds: number; color: string; running: boolean; onExpire: () => void; size?: number }) {
   const [left, setLeft] = useState(seconds * 1000)
@@ -13,9 +14,14 @@ export function TimerRing({ seconds, color, running, onExpire, size = 44 }: { se
   useEffect(() => {
     if (!running) return
     const end = performance.now() + seconds * 1000
+    let lastSecond = seconds
     const id = setInterval(() => {
       const remaining = Math.max(0, end - performance.now())
       setLeft(remaining)
+      // 마지막 5초는 초마다 짧게 똑딱
+      const second = Math.ceil(remaining / 1000)
+      if (second !== lastSecond && second <= 5 && second > 0) play('tick')
+      lastSecond = second
       if (remaining === 0) {
         clearInterval(id)
         onExpireRef.current()

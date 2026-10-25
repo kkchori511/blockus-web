@@ -118,6 +118,13 @@ describe('턴 진행', () => {
     expect(state.log.at(-1)).toMatchObject({ type: 'pass', reason: 'timeout', color: 0 })
   })
 
+  it('스스로 포기한 패스도 다음 색으로 넘어가고 기록이 남는다', () => {
+    const state = passTurn(createGame(config()), 'manual')
+    expect(state.current).toBe(1)
+    expect(state.out[0]).toBe(false)
+    expect(state.log.at(-1)).toMatchObject({ type: 'pass', reason: 'manual', color: 0 })
+  })
+
   it('배치 후 넘긴 좌표 배열을 바꿔도 기록은 그대로다', () => {
     const cells: [number, number][] = [
       [0, 0],

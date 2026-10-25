@@ -1,6 +1,6 @@
 // 게임 화면의 상태 관리: 엔진 상태 + 캐러셀 선택, 회전·뒤집기, 배치 대기(확정 전) 상태.
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { chooseMove } from '../engine/sim'
 import {
   canPlace,
@@ -18,6 +18,7 @@ import {
   type Point,
   type Shape,
 } from '../engine'
+import { clearGame, saveGame } from './save'
 
 export interface Orientation {
   rotation: number
@@ -48,8 +49,15 @@ function defaultIndex(choices: PieceId[]): number {
   return choices.findIndex((id) => PIECES[id].size === maxSize)
 }
 
-export function useGameController(config: GameConfig) {
-  const [state, setState] = useState<GameState>(() => createGame(config))
+/** initial을 주면 저장된 게임을 이어서 한다 */
+export function useGameController(config: GameConfig, initial?: GameState) {
+  const [state, setState] = useState<GameState>(() => initial ?? createGame(config))
+
+  // 상태가 바뀔 때마다 자동 저장, 끝난 게임은 지운다
+  useEffect(() => {
+    if (state.over) clearGame()
+    else saveGame(state)
+  }, [state])
   /** null이면 턴 시작 기본 위치(defaultIndex) */
   const [chosenIndex, setIndex] = useState<number | null>(null)
   const [orientation, setOrientation] = useState<Orientation>({ rotation: 0, flipped: false })
@@ -134,6 +142,12 @@ export function useGameController(config: GameConfig) {
     resetSelection()
   }, [])
 
+  /** 놓을 수 있는 수가 있어도 스스로 이번 턴을 넘긴다(시간 제한이 없을 때 막힘 방지) */
+  const giveUp = useCallback(() => {
+    setState((s) => passTurn(s, 'manual'))
+    resetSelection()
+  }, [])
+
   const undoLast = useCallback(() => {
     setState((s) => undo(s))
     resetSelection()
@@ -176,6 +190,7 @@ export function useGameController(config: GameConfig) {
     cancel,
     confirm,
     timeout,
+    giveUp,
     undoLast,
     restart,
     debugAutoplay,

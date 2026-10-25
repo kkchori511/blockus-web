@@ -42,7 +42,8 @@ export function colorOwners(playerCount: PlayerCount): ColorOwner[] {
   return [0, 1, 0, 1]
 }
 
-export type PassReason = 'timeout' | 'blockedDraw'
+/** timeout: 시간 초과, blockedDraw: 올랜덤에서 뽑힌 조각을 놓을 수 없음, manual: 플레이어가 스스로 포기 */
+export type PassReason = 'timeout' | 'blockedDraw' | 'manual'
 export type OutReason = 'noMoves' | 'allPlaced'
 
 export type GameEvent =
@@ -201,7 +202,7 @@ export function place(state: GameState, pieceId: PieceId, cells: Shape): GameSta
   return s
 }
 
-/** 시간 초과 등으로 이번 턴을 넘긴다. 되돌리기 기회는 유지된다(다음 배치 전까지). */
+/** 시간 초과나 포기로 이번 턴을 넘긴다. 되돌리기 기회는 유지된다(다음 배치 전까지). */
 export function passTurn(state: GameState, reason: PassReason = 'timeout'): GameState {
   if (state.over) return state
   const s = cloneState(state)

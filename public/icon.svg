@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- 블로커스 아이콘: 밝은 판 위에 네 색 조각이 모서리에서 가운데로 뻗어 나가는 모습 -->
+  <defs>
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e6e9ee"/>
+    </linearGradient>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.45"/>
+      <stop offset="0.5" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#plate)"/>
+  <g stroke-width="6" stroke-linejoin="round">
+    <!-- 파랑 V (좌상) -->
+    <path d="M96 96h72v72h-72zM96 168h72v72h-72zM168 168h72v72h-72z" fill="#0758ff" stroke="#072b91" stroke-opacity="0.35"/>
+    <!-- 노랑 L (우상) -->
+    <path d="M344 96h72v72h-72zM344 168h72v72h-72zM272 168h72v72h-72z" fill="#ffca05" stroke="#a96b00" stroke-opacity="0.35"/>
+    <!-- 초록 (좌하) -->
+    <path d="M96 344h72v72h-72zM168 344h72v72h-72zM168 272h72v72h-72z" fill="#009b40" stroke="#005b29" stroke-opacity="0.35"/>
+    <!-- 빨강 (우하) -->
+    <path d="M344 344h72v72h-72zM344 272h72v72h-72zM272 344h72v72h-72z" fill="#f41418" stroke="#8f0712" stroke-opacity="0.35"/>
+  </g>
+  <g fill="url(#gloss)">
+    <path d="M96 96h72v72h-72zM96 168h72v72h-72zM168 168h72v72h-72zM344 96h72v72h-72zM344 168h72v72h-72zM272 168h72v72h-72zM96 344h72v72h-72zM168 344h72v72h-72zM168 272h72v72h-72zM344 344h72v72h-72zM344 272h72v72h-72zM272 344h72v72h-72z"/>
+  </g>
+</svg>

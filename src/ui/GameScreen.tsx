@@ -1,13 +1,16 @@
 // 게임 화면: 가운데 보드, 좌우 4개 플레이어 영역, 드래그 배치와 확정, 알림, 종료 화면.
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { BOARD_SIZE, playerScores, type Color, type GameConfig, type GameEvent, type Point } from '../engine'
+import { BOARD_SIZE, type Color, type GameConfig, type GameEvent, type GameState, type Point } from '../engine'
+import { clearGame } from '../game/save'
 import { useGameController, type GameController } from '../game/useGameController'
 import { Board, BOARD_UNITS, RIM } from './Board'
 import { PALETTE } from './palette'
-import { CloseIcon, HomeIcon } from './icons'
+import { CloseIcon, HomeIcon, SoundOffIcon, SoundOnIcon } from './icons'
 import { PieceIcon, PlasticDefs } from './Plastic'
 import { PlayerPanel, type PanelMode } from './PlayerPanel'
+import { ResultDialog } from './ResultDialog'
+import { isMuted, play, setMuted, unlockAudio, type SoundName } from './sound'
 
 /** 터치로 끌 때 손가락에 가리지 않도록 조각을 손가락 위쪽(칸 단위)에 띄운다 */
 const TOUCH_LIFT = 1.6
@@ -20,16 +23,34 @@ interface Drag {
   cellPx: number
 }
 
-export function GameScreen({ config, onExit }: { config: GameConfig; onExit?: () => void }) {
-  const game = useGameController(config)
+export function GameScreen({ config, initial, onExit }: { config: GameConfig; initial?: GameState; onExit?: () => void }) {
+  const game = useGameController(config, initial)
   const { state } = game
   const boardRef = useRef<SVGSVGElement>(null)
   const sideRef = useRef<HTMLDivElement>(null)
   const sideWidth = useElementWidth(sideRef)
   const [drag, setDrag] = useState<Drag | null>(null)
   const [confirmExit, setConfirmExit] = useState(false)
+  const [confirmPass, setConfirmPass] = useState(false)
+  const [viewBoard, setViewBoard] = useState(false)
+  const [muted, setMutedState] = useState(isMuted)
   const gameRef = useLatest(game)
-  const toasts = useEventToasts(game)
+  const toasts = useGameEvents(game)
+
+  // 브라우저는 사용자 조작 전에는 소리를 막으므로 첫 터치·클릭에서 오디오를 깨운다
+  useEffect(() => {
+    window.addEventListener('pointerdown', unlockAudio, { once: true })
+    return () => window.removeEventListener('pointerdown', unlockAudio)
+  }, [])
+
+  const exit = () => {
+    clearGame()
+    onExit?.()
+  }
+  const toggleMute = () => {
+    setMuted(!muted)
+    setMutedState(!muted)
+  }
 
   const carouselCell = Math.max(18, Math.min(48, (sideWidth - 40) / 6))
 
@@ -114,7 +135,15 @@ export function GameScreen({ config, onExit }: { config: GameConfig; onExit?: ()
   }
 
   const panel = (color: Color, partner: Color) => (
-    <PlayerPanel key={color} game={game} color={color} mode={modeFor(color, partner)} carouselCell={carouselCell} onDragStart={startDrag} />
+    <PlayerPanel
+      key={color}
+      game={game}
+      color={color}
+      mode={modeFor(color, partner)}
+      carouselCell={carouselCell}
+      onDragStart={startDrag}
+      onGiveUp={() => setConfirmPass(true)}
+    />
   )
 
   const floating = drag && !drag.overBoard && game.shape && game.selected
@@ -134,11 +163,16 @@ export function GameScreen({ config, onExit }: { config: GameConfig; onExit?: ()
             preview={game.pendingCells ? { color: state.current, cells: game.pendingCells, valid: game.pendingValid } : null}
           />
           {game.pendingCells && !drag && <PendingActions game={game} />}
-          {onExit && !state.over && (
-            <button className="home-btn" onClick={() => setConfirmExit(true)} aria-label="처음으로" title="처음으로">
-              <HomeIcon />
+          <div className="corner-btns">
+            <button className="corner-btn" onClick={toggleMute} aria-label={muted ? '소리 켜기' : '소리 끄기'} title={muted ? '소리 켜기' : '소리 끄기'}>
+              {muted ? <SoundOffIcon /> : <SoundOnIcon />}
             </button>
-          )}
+            {onExit && !state.over && (
+              <button className="corner-btn" onClick={() => setConfirmExit(true)} aria-label="처음으로" title="처음으로">
+                <HomeIcon />
+              </button>
+            )}
+          </div>
           <div className="toasts">
             {toasts.map((t) => (
               <div key={t.id} className="toast" style={{ borderColor: t.color ? PALETTE[t.color].accent : undefined }}>
@@ -162,25 +196,59 @@ export function GameScreen({ config, onExit }: { config: GameConfig; onExit?: ()
         </div>
       )}
 
-      {state.over && <GameOver game={game} onExit={onExit} />}
+      {state.over && !viewBoard && (
+        <ResultDialog state={state} onRestart={game.restart} onExit={onExit ? exit : undefined} onViewBoard={() => setViewBoard(true)} />
+      )}
+      {state.over && viewBoard && (
+        <button className="confirm-btn show-result-btn" onClick={() => setViewBoard(false)}>
+          결과 보기
+        </button>
+      )}
+
+      {confirmPass && (
+        <Dialog
+          title="이번 턴을 패스할까요?"
+          text="아직 놓을 수 있는 자리가 있어요. 패스하면 이번 턴은 조각을 놓지 않고 다음 사람에게 넘어갑니다."
+          cancel="다시 찾아보기"
+          ok="패스"
+          onCancel={() => setConfirmPass(false)}
+          onOk={() => {
+            setConfirmPass(false)
+            game.giveUp()
+          }}
+        />
+      )}
 
       {confirmExit && onExit && (
-        <div className="overlay" onClick={() => setConfirmExit(false)}>
-          <div className="result" onClick={(e) => e.stopPropagation()}>
-            <h2>게임을 그만둘까요?</h2>
-            <p className="dialog-text">지금 진행 중인 게임은 사라지고 시작 화면으로 돌아갑니다.</p>
-            <div className="result-actions">
-              <button className="ghost-btn" onClick={() => setConfirmExit(false)}>
-                계속하기
-              </button>
-              <button className="confirm-btn" onClick={onExit}>
-                그만두기
-              </button>
-            </div>
-          </div>
-        </div>
+        <Dialog
+          title="게임을 그만둘까요?"
+          text="지금 진행 중인 게임은 사라지고 시작 화면으로 돌아갑니다."
+          cancel="계속하기"
+          ok="그만두기"
+          onCancel={() => setConfirmExit(false)}
+          onOk={exit}
+        />
       )}
     </>
+  )
+}
+
+function Dialog({ title, text, cancel, ok, onCancel, onOk }: { title: string; text: string; cancel: string; ok: string; onCancel: () => void; onOk: () => void }) {
+  return (
+    <div className="overlay" onClick={onCancel}>
+      <div className="result" onClick={(e) => e.stopPropagation()}>
+        <h2>{title}</h2>
+        <p className="dialog-text">{text}</p>
+        <div className="result-actions">
+          <button className="ghost-btn" onClick={onCancel}>
+            {cancel}
+          </button>
+          <button className="confirm-btn" onClick={onOk}>
+            {ok}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -206,41 +274,6 @@ function PendingActions({ game }: { game: GameController }) {
       <button className="confirm-btn" disabled={!game.pendingValid} onClick={game.confirm}>
         {game.pendingValid ? '확정' : '놓을 수 없음'}
       </button>
-    </div>
-  )
-}
-
-function GameOver({ game, onExit }: { game: GameController; onExit?: () => void }) {
-  const scores = playerScores(game.state).sort((a, b) => a.rank - b.rank)
-  return (
-    <div className="overlay">
-      <div className="result">
-        <h2>게임 종료</h2>
-        <ol>
-          {scores.map((s) => (
-            <li key={s.player}>
-              <span className="rank">{s.rank}위</span>
-              <span className="who">
-                {s.colors.map((c) => (
-                  <span key={c} className="dot" style={{ background: PALETTE[c].base }} />
-                ))}
-                {s.name}
-              </span>
-              <span className="pts">{s.final}점</span>
-            </li>
-          ))}
-        </ol>
-        <div className="result-actions">
-          <button className="confirm-btn" onClick={game.restart}>
-            다시 하기
-          </button>
-          {onExit && (
-            <button className="ghost-btn" onClick={onExit}>
-              처음으로
-            </button>
-          )}
-        </div>
-      </div>
     </div>
   )
 }
@@ -291,32 +324,48 @@ interface Toast {
   color?: Color
 }
 
-/** 자동 패스·탈락·되돌리기처럼 놓치기 쉬운 일을 잠깐 알려 준다 */
-function useEventToasts(game: GameController) {
+/** 새로 생긴 게임 기록마다 효과음을 내고, 자동 패스·탈락·되돌리기처럼 놓치기 쉬운 일은 잠깐 알려 준다 */
+function useGameEvents(game: GameController) {
   const { state } = game
   const [toasts, setToasts] = useState<Toast[]>([])
   const seen = useRef(state.log.length)
   const nextId = useRef(0)
+  const timers = useRef<number[]>([])
   useEffect(() => {
     const log = state.log
+    // 되돌리기는 예전 기록으로 돌아간 뒤 undo 하나를 덧붙이므로 길이가 줄 수 있다
     const fresh = log.length > seen.current ? log.slice(seen.current) : log.at(-1)?.type === 'undo' ? [log.at(-1)!] : []
     seen.current = log.length
+    const sound = loudest(fresh)
+    if (sound) play(sound)
     const items = fresh.map((e) => describe(e, state.config.playerNames)).filter((t): t is Omit<Toast, 'id'> => !!t)
     if (!items.length) return
     const added = items.map((t) => ({ ...t, id: nextId.current++ }))
     setToasts((prev) => [...prev, ...added].slice(-3))
-    const timer = setTimeout(() => setToasts((prev) => prev.filter((t) => !added.includes(t))), 2800)
-    return () => clearTimeout(timer)
+    timers.current.push(window.setTimeout(() => setToasts((prev) => prev.filter((t) => !added.includes(t))), 2800))
   }, [state.log, state.config.playerNames])
+  useEffect(() => () => timers.current.forEach(clearTimeout), [])
   return toasts
+}
+
+/** 한 번에 여러 일이 생기면(놓자마자 다음 색이 자동 탈락 등) 가장 중요한 소리 하나만 낸다 */
+function loudest(events: GameEvent[]): SoundName | null {
+  const types = new Set(events.map((e) => (e.type === 'pass' ? 'pass' : e.type)))
+  if (types.has('gameOver')) return 'gameOver'
+  if (types.has('undo')) return 'undo'
+  if (types.has('place')) return 'place'
+  if (types.has('out')) return 'out'
+  if (types.has('pass')) return 'pass'
+  return null
 }
 
 function describe(e: GameEvent, names: string[]): Omit<Toast, 'id'> | null {
   switch (e.type) {
-    case 'pass':
-      return e.reason === 'timeout'
-        ? { text: `${names[e.player]}(${PALETTE[e.color].name}) 시간 초과로 패스`, color: e.color }
-        : { text: `${names[e.player]}(${PALETTE[e.color].name}) 뽑힌 조각을 놓을 자리가 없어 패스`, color: e.color }
+    case 'pass': {
+      const who = `${names[e.player]}(${PALETTE[e.color].name})`
+      const why = { timeout: '시간 초과로 패스', blockedDraw: '뽑힌 조각을 놓을 자리가 없어 패스', manual: '패스' }[e.reason]
+      return { text: `${who} ${why}`, color: e.color }
+    }
     case 'out':
       return e.reason === 'allPlaced'
         ? { text: `${PALETTE[e.color].name} 모든 조각을 놓았습니다!`, color: e.color }

@@ -1,9 +1,11 @@
 // 시작 화면: 인원수, 닉네임, 게임 모드, 옵션을 고른다. 마지막 설정은 브라우저에 기억한다.
 
 import { useState } from 'react'
-import { colorOwners, COLORS, PIECES, randomSeed, type Color, type GameConfig, type GameMode, type PieceId, type PlayerCount, type TimeLimit } from '../engine'
+import { colorOwners, COLORS, PIECES, randomSeed, type Color, type GameConfig, type GameMode, type GameState, type PieceId, type PlayerCount, type TimeLimit } from '../engine'
+import { clearGame, loadGame } from '../game/save'
 import { PALETTE } from './palette'
 import { PieceIcon, PlasticDefs } from './Plastic'
+import { unlockAudio } from './sound'
 
 interface Settings {
   playerCount: PlayerCount
@@ -56,12 +58,14 @@ const TIME_OPTIONS: { value: TimeLimit | null; label: string }[] = [
   { value: 60, label: '1분' },
 ]
 
-export function StartScreen({ onStart }: { onStart: (config: GameConfig) => void }) {
+export function StartScreen({ onStart, onResume }: { onStart: (config: GameConfig) => void; onResume: (state: GameState) => void }) {
   const [s, setS] = useState<Settings>(loadSettings)
+  const [saved, setSaved] = useState(loadGame)
   const update = (patch: Partial<Settings>) => setS((prev) => ({ ...prev, ...patch }))
   const owners = colorOwners(s.playerCount)
 
   const start = () => {
+    unlockAudio()
     saveSettings(s)
     const names = Array.from({ length: s.playerCount }, (_, i) => s.names[i]?.trim() || `플레이어 ${i + 1}`)
     onStart({
@@ -98,6 +102,30 @@ export function StartScreen({ onStart }: { onStart: (config: GameConfig) => void
         </section>
 
         <section className="start-right">
+          {saved && (
+            <div className="resume-card">
+              <div>
+                <strong>진행 중인 게임이 있어요</strong>
+                <span>
+                  {MODES.find((m) => m.id === saved.state.config.mode)?.title} · {saved.state.config.playerNames.join(', ')} · {timeAgo(saved.savedAt)}
+                </span>
+              </div>
+              <div className="resume-actions">
+                <button
+                  className="ghost-btn"
+                  onClick={() => {
+                    clearGame()
+                    setSaved(null)
+                  }}
+                >
+                  지우기
+                </button>
+                <button className="confirm-btn" onClick={() => onResume(saved.state)}>
+                  이어서 하기
+                </button>
+              </div>
+            </div>
+          )}
           <h2 className="start-label">인원</h2>
           <div className="segmented">
             {([2, 3, 4] as const).map((n) => (
@@ -160,6 +188,15 @@ export function StartScreen({ onStart }: { onStart: (config: GameConfig) => void
       </main>
     </>
   )
+}
+
+function timeAgo(at: number): string {
+  const min = Math.floor((Date.now() - at) / 60000)
+  if (min < 1) return '방금 전'
+  if (min < 60) return `${min}분 전`
+  const hours = Math.floor(min / 60)
+  if (hours < 24) return `${hours}시간 전`
+  return `${Math.floor(hours / 24)}일 전`
 }
 
 function ColorDot({ color }: { color: Color }) {

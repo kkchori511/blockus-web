@@ -16,9 +16,10 @@ interface Props {
   mode: PanelMode
   carouselCell: number
   onDragStart: (e: React.PointerEvent) => void
+  onGiveUp: () => void
 }
 
-export function PlayerPanel({ game, color, mode, carouselCell, onDragStart }: Props) {
+export function PlayerPanel({ game, color, mode, carouselCell, onDragStart, onGiveUp }: Props) {
   const { state } = game
   const { config } = state
   const tone = PALETTE[color]
@@ -89,6 +90,12 @@ export function PlayerPanel({ game, color, mode, carouselCell, onDragStart }: Pr
             )}
           </div>
           {state.drawn && <p className="hint">이번 턴에 낼 조각이 정해졌습니다</p>}
+          {/* 시간 제한이 없으면 수를 못 찾을 때 게임이 멈추지 않도록 스스로 패스할 수 있게 한다 */}
+          {!config.options.timeLimit && (
+            <button className="pass-btn" onClick={onGiveUp}>
+              이번 턴 패스
+            </button>
+          )}
         </>
       )}
 

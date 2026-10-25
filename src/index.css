@@ -466,44 +466,6 @@ button:disabled {
   margin: 0 0 16px;
 }
 
-.result ol {
-  list-style: none;
-  margin: 0 0 20px;
-  padding: 0;
-  display: grid;
-  gap: 10px;
-}
-
-.result li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 18px;
-}
-
-.result .rank {
-  width: 40px;
-  font-weight: 700;
-}
-
-.result .who {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.result .dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 4px;
-}
-
-.result .pts {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
 .result-actions {
   display: flex;
   gap: 10px;
@@ -809,10 +771,16 @@ button:disabled {
   transform: translateY(1px);
 }
 
-.home-btn {
+.corner-btns {
   position: absolute;
   top: -6px;
   right: -6px;
+  display: flex;
+  gap: 8px;
+  z-index: 7;
+}
+
+.corner-btn {
   width: 40px;
   height: 40px;
   border: 0;
@@ -822,10 +790,173 @@ button:disabled {
   box-shadow: 0 2px 8px rgb(15 23 42 / 0.15);
   display: grid;
   place-items: center;
-  z-index: 7;
 }
 
 .dialog-text {
   margin: 0 0 20px;
   color: var(--muted);
+}
+
+.pass-btn {
+  align-self: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 4px 8px;
+}
+
+/* ---------- 결과 ---------- */
+
+.result.wide {
+  width: min(640px, 92vw);
+}
+
+.result-kicker {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.result-title {
+  margin: 4px 0 18px;
+  font-size: 30px;
+}
+
+.result-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.result-list li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: #f1f5f9;
+}
+
+.result-list li.winner {
+  background: #fff7d6;
+  box-shadow: inset 0 0 0 2px #f2c94c;
+}
+
+.rank-badge {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.12);
+}
+
+.winner .rank-badge {
+  background: #f2b705;
+  color: #fff;
+}
+
+.result-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.result-who strong {
+  font-size: 18px;
+}
+
+.result-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.color-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.color-detail .color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.color-detail .bonus {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.result-pts {
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-note {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.result.wide .result-actions {
+  margin-top: 18px;
+}
+
+.show-result-btn {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 25;
+}
+
+/* ---------- 이어서 하기 ---------- */
+
+.resume-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: #fff7d6;
+  box-shadow: inset 0 0 0 2px #f2c94c;
+}
+
+.resume-card strong {
+  display: block;
+  font-size: 17px;
+}
+
+.resume-card span {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.resume-actions {
+  display: flex;
+  gap: 8px;
+  flex: none;
 }
