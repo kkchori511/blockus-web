@@ -234,8 +234,11 @@ function Title() {
         <PieceIcon shape={PIECES.Z5.shape} color={2} cellSize={18} />
         <PieceIcon shape={PIECES.L4.shape} color={3} cellSize={18} />
       </div>
-      <h1>블로커스</h1>
+      <h1>
+        블로커스<span className="title-version">v{__APP_VERSION__}</span>
+      </h1>
       <p>모서리끼리만 이어서, 내 땅을 넓혀라</p>
+      <div className="title-credit">Made by 김한량 디지털 공방</div>
     </div>
   )
 }

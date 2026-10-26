@@ -694,6 +694,30 @@ button:disabled {
   color: var(--muted);
 }
 
+.title-version {
+  margin-left: 14px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0;
+  vertical-align: 0.15em;
+}
+
+.title-credit {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 7px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 800;
+}
+
 .start-label {
   margin: 22px 0 10px;
   font-size: 15px;

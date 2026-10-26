@@ -1,11 +1,14 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import pkg from './package.json' with { type: 'json' }
 
 // https://vite.dev/config/
 export default defineConfig(({ command, isPreview }) => ({
   // GitHub Pages는 https://kkchori511.github.io/blockus-web/ 아래에서 열리므로 빌드·미리보기는 하위 경로를 쓴다
   base: command === 'build' || isPreview ? '/blockus-web/' : '/',
+  // 시작 화면에 보여 줄 버전. package.json의 version을 그대로 쓴다
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   plugins: [
     react(),
     // 태블릿 홈 화면에 추가해 전체 화면·오프라인으로 실행
